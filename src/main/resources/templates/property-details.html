@@ -2,17 +2,19 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Property Details</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             background-color: lightblue;
-            margin: 20px;
+            margin: 10px;
         }
 
         h1 {
             text-align: center;
             color: brown;
+            font-size: 1.8rem;
         }
 
         .property-card {
@@ -37,11 +39,13 @@
         .property-card h2 {
             margin: 10px 0;
             color: #333;
+            font-size: 1.3rem;
         }
 
         .property-card p {
             margin: 5px 0;
             color: #555;
+            font-size: 1rem;
         }
 
         .back-home {
@@ -59,12 +63,19 @@
         .back-home:hover {
             background-color: #1565c0;
         }
+
+        /* 📱 Responsive */
+        @media (max-width: 480px) {
+            h1 { font-size: 1.5rem; }
+            .property-card { width: 90%; padding: 15px; }
+            .property-card h2 { font-size: 1.1rem; }
+            .property-card p { font-size: 0.95rem; }
+        }
     </style>
 </head>
 <body>
     <h1>Property Details</h1>
 
-    <!-- Back to Home Button -->
     <div style="text-align:center;">
         <a href="/webpages/home" class="back-home">Back to Home</a>
     </div>

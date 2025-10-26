@@ -2,34 +2,37 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add / Edit Property</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             background-color: lightblue;
-            margin: 20px;
+            margin: 10px;
         }
 
         h1 {
             text-align: center;
             color: brown;
-            margin-bottom: 20px;
+            font-size: 1.8rem;
+            margin-bottom: 15px;
         }
 
         form {
-            text-align: center;
+            text-align: left;
             border: 2px solid #4CAF50;
             border-radius: 10px;
             padding: 20px;
-            width: 300px;
+            max-width: 400px;
             margin: 0 auto;
             background-color: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         }
 
         label {
             display: block;
-            text-align: left;
             margin: 10px 0 5px;
+            font-weight: bold;
         }
 
         input[type="text"],
@@ -41,10 +44,11 @@
             margin-bottom: 10px;
             border-radius: 5px;
             border: 1px solid #ccc;
+            box-sizing: border-box;
         }
 
         button {
-            padding: 8px 16px;
+            padding: 10px 18px;
             color: white;
             background-color: darkslategrey;
             border: none;
@@ -53,6 +57,7 @@
             font-weight: bold;
             transition: background-color 0.3s;
             margin-top: 10px;
+            width: 100%;
         }
 
         button:hover {
@@ -69,19 +74,29 @@
             border-radius: 6px;
             font-weight: bold;
             transition: background-color 0.3s;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
+            text-align: center;
         }
 
         .back-dashboard:hover {
             background-color: #1565c0;
+        }
+
+        /* 📱 Responsive */
+        @media (max-width: 480px) {
+            form {
+                width: 90%;
+                padding: 15px;
+            }
+            h1 { font-size: 1.5rem; }
+            button { padding: 8px; }
         }
     </style>
 </head>
 <body>
     <h1>Add / Edit Property</h1>
 
-    <!-- Back to Dashboard Button -->
-    <div style="text-align: center; margin-bottom: 20px;">
+    <div style="text-align: center;">
         <a href="/webpages/dashboard" class="back-dashboard">Back to Dashboard</a>
     </div>
 
@@ -163,6 +178,5 @@
     </script>
 </body>
 </html>
-
 
 
