@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Property Details</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: lightblue;
+            margin: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: brown;
+        }
+
+        .property-card {
+            border: 2px solid #4CAF50;
+            border-radius: 10px;
+            padding: 20px;
+            max-width: 450px;
+            margin: 20px auto;
+            background-color: #fff;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .property-card img {
+            width: 100%;
+            max-height: 250px;
+            object-fit: cover;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+
+        .property-card h2 {
+            margin: 10px 0;
+            color: #333;
+        }
+
+        .property-card p {
+            margin: 5px 0;
+            color: #555;
+        }
+
+        .back-home {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #1976d2;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            margin: 10px auto 20px;
+            transition: background-color 0.3s;
+        }
+
+        .back-home:hover {
+            background-color: #1565c0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Property Details</h1>
+
+    <!-- Back to Home Button -->
+    <div style="text-align:center;">
+        <a href="/webpages/home" class="back-home">Back to Home</a>
+    </div>
+
+    <div id="property-detail" class="property-card">Loading...</div>
+
+    <script>
+        const path = window.location.pathname;
+        const id = path.split('/').pop();
+
+        async function loadProperty() {
+            try {
+                const res = await fetch('/api/properties');
+                const properties = await res.json();
+                const property = properties.find(p => p.id == id);
+                const container = document.getElementById('property-detail');
+
+                if(property){
+                    container.innerHTML = `
+                        <img src="${property.imageUrl || 'https://via.placeholder.com/400x250?text=No+Image'}" alt="${property.title}">
+                        <h2>${property.title}</h2>
+                        <p>${property.description}</p>
+                        <p><strong>Price:</strong> ₹${property.price}</p>
+                        <p><strong>Type:</strong> ${property.type}</p>
+                        <p><strong>Location:</strong> ${property.location}</p>
+                        <p><strong>Owner:</strong> ${property.owner.name} (${property.owner.email})</p>
+                    `;
+                } else {
+                    container.innerHTML = '<p>Property not found</p>';
+                }
+            } catch (error) {
+                document.getElementById('property-detail').innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+
+        loadProperty();
+    </script>
+</body>
+</html>

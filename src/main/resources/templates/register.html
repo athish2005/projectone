@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Register</title>
+    <style>
+        /* 🌟 General Styles */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #e3f2fd;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: #d32f2f;
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        h3 {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        a {
+            color: #1976d2;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* 📝 Form Styling */
+        form {
+            background-color: #fff;
+            border: 2px solid #4CAF50;
+            border-radius: 12px;
+            padding: 30px 25px;
+            width: 320px;
+            margin: 30px 0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        label {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="password"],
+        select {
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: #1976d2;
+            outline: none;
+        }
+
+        button {
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            background-color: #1976d2;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #1565c0;
+        }
+
+        /* 📱 Responsive */
+        @media (max-width: 400px) {
+            form {
+                width: 90%;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Register</h1>
+    <form id="register-form">
+        <label for="name">Name:</label>
+        <input type="text" id="name" required>
+
+        <label for="email">Email:</label>
+        <input type="email" id="email" required>
+
+        <label for="password">Password:</label>
+        <input type="password" id="password" required>
+
+        <label for="role">Role:</label>
+        <select id="role">
+            <option value="ROLE_CUSTOMER">Customer</option>
+            <option value="ROLE_ADMIN">Admin</option>
+        </select>
+
+        <button type="submit">Register</button>
+    </form>
+
+    <h3>Already have an account? <a href="/webpages/login">Login</a></h3>
+
+    <script>
+        const form = document.getElementById('register-form');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value,
+                role: document.getElementById('role').value
+            };
+            const res = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            if(res.ok) {
+                alert('Registered successfully! Please login.');
+                window.location.href = '/webpages/login';
+            } else {
+                const err = await res.text();
+                alert(err);
+            }
+        });
+    </script>
+</body>
+</html>

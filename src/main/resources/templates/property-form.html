@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Add / Edit Property</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: lightblue;
+            margin: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: brown;
+            margin-bottom: 20px;
+        }
+
+        form {
+            text-align: center;
+            border: 2px solid #4CAF50;
+            border-radius: 10px;
+            padding: 20px;
+            width: 300px;
+            margin: 0 auto;
+            background-color: #fff;
+        }
+
+        label {
+            display: block;
+            text-align: left;
+            margin: 10px 0 5px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select,
+        input[type="file"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            padding: 8px 16px;
+            color: white;
+            background-color: darkslategrey;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #333;
+        }
+
+        /* Back to Dashboard button */
+        .back-dashboard {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #1976d2;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .back-dashboard:hover {
+            background-color: #1565c0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Add / Edit Property</h1>
+
+    <!-- Back to Dashboard Button -->
+    <div style="text-align: center; margin-bottom: 20px;">
+        <a href="/webpages/dashboard" class="back-dashboard">Back to Dashboard</a>
+    </div>
+
+    <form id="property-form">
+        <label>Title:</label>
+        <input type="text" id="title" required>
+
+        <label>Description:</label>
+        <input type="text" id="description" required>
+
+        <label>Price:</label>
+        <input type="number" id="price" required>
+
+        <label>Type:</label>
+        <select id="type">
+            <option value="SALE">Sale</option>
+            <option value="RENT">Rent</option>
+        </select>
+
+        <label>Location:</label>
+        <input type="text" id="location" required>
+
+        <label>Image:</label>
+        <input type="file" id="imageFile">
+
+        <button type="submit">Save</button>
+    </form>
+
+    <script>
+        const token = localStorage.getItem('token');
+        if(!token) window.location.href = '/webpages/login';
+
+        const path = window.location.pathname;
+        const id = path.includes('/edit/') ? path.split('/').pop() : null;
+
+        async function loadProperty() {
+            if(id){
+                const res = await fetch(`/api/properties`);
+                const properties = await res.json();
+                const property = properties.find(p => p.id == id);
+                if(property){
+                    document.getElementById('title').value = property.title;
+                    document.getElementById('description').value = property.description;
+                    document.getElementById('price').value = property.price;
+                    document.getElementById('type').value = property.type;
+                    document.getElementById('location').value = property.location;
+                }
+            }
+        }
+
+        document.getElementById('property-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData();
+            const property = {
+                title: document.getElementById('title').value,
+                description: document.getElementById('description').value,
+                price: parseFloat(document.getElementById('price').value),
+                type: document.getElementById('type').value,
+                location: document.getElementById('location').value
+            };
+            formData.append('property', JSON.stringify(property));
+            const file = document.getElementById('imageFile').files[0];
+            if(file) formData.append('imageFile', file);
+            
+            const email = JSON.parse(atob(token.split('.')[1])).sub;
+            const url = id ? `/api/properties/update/${id}` : `/api/properties/create?ownerEmail=${email}`;
+            const method = id ? 'PUT' : 'POST';
+
+            await fetch(url, {
+                method: method,
+                headers: {'Authorization': 'Bearer ' + token},
+                body: formData
+            });
+
+            window.location.href = '/webpages/dashboard';
+        });
+
+        loadProperty();
+    </script>
+</body>
+</html>
+
+
+

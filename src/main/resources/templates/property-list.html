@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Property List</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: lightsteelblue;
+      margin: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: brown;
+    }
+
+    .search-bar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .search-bar input, .search-bar select, .search-bar button {
+      padding: 8px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    .search-bar button {
+      background-color: #1976d2;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+      border: none;
+    }
+
+    .search-bar button:hover {
+      background-color: #1565c0;
+    }
+
+    .property-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .property-card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 15px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      transition: transform 0.2s;
+    }
+
+    .property-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .property-card h3 {
+      margin: 5px 0;
+      color: #333;
+    }
+
+    .property-card p {
+      margin: 5px 0;
+      color: #555;
+    }
+
+    .property-card img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 5px;
+      margin-bottom: 10px;
+    }
+
+    .property-card button, .property-card a {
+      margin-right: 5px;
+      margin-top: 5px;
+      padding: 6px 12px;
+      border-radius: 5px;
+      cursor: pointer;
+      text-decoration: none;
+      color: white;
+      border: none;
+    }
+
+    .property-card button {
+      background-color: crimson;
+    }
+
+    .property-card a {
+      background-color: #007bff;
+    }
+
+    .property-card button:hover {
+      opacity: 0.8;
+    }
+
+    .property-card a:hover {
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+  <h1>Properties</h1>
+
+  <!-- Search Bar -->
+  <div class="search-bar">
+    <input id="qKeyword" placeholder="Keyword">
+    <input id="qLocation" placeholder="Location">
+    <input id="qMinPrice" placeholder="Min price" type="number">
+    <input id="qMaxPrice" placeholder="Max price" type="number">
+    <select id="qType">
+      <option value="">All</option>
+      <option value="SALE">SALE</option>
+      <option value="RENT">RENT</option>
+    </select>
+    <button id="btnSearch">Search</button>
+    <button id="btnClear">Clear</button>
+  </div>
+
+  <!-- Property Grid -->
+  <div id="list" class="property-grid"></div>
+
+  <script>
+    function parseJwt(token) {
+      try {
+        const base = token.split('.')[1];
+        return JSON.parse(decodeURIComponent(atob(base).split('').map(c =>
+          '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')));
+      } catch (e) { return null; }
+    }
+
+    const token = localStorage.getItem('token');
+    const jwt = token ? parseJwt(token) : null;
+    const currentEmail = jwt?.sub;
+    const currentRole = jwt?.role || null;
+
+    async function loadApproved() {
+      try {
+        const res = await fetch('/api/properties/approved');
+        if (!res.ok) {
+          document.getElementById('list').innerText = 'Failed to load properties';
+          return;
+        }
+        const props = await res.json();
+        render(props);
+      } catch (err) {
+        console.error(err);
+        document.getElementById('list').innerText = 'Error loading properties';
+      }
+    }
+
+    function render(props) {
+      const container = document.getElementById('list');
+      if (!props.length) {
+        container.innerHTML = '<p>No properties found.</p>';
+        return;
+      }
+      container.innerHTML = props.map(p => `
+        <div class="property-card">
+          <img src="${p.imageUrl || 'https://via.placeholder.com/300x200?text=No+Image'}" alt="${p.title}">
+          <h3>${p.title}</h3>
+          <p>${p.description || ''}</p>
+          <p>Type: ${p.type} | Price: ₹${p.price} | Location: ${p.location}</p>
+          <a href="/webpages/properties/${p.id}">Details</a>
+          ${showOwnerActions(p)}
+        </div>
+      `).join('');
+    }
+
+    function showOwnerActions(p) {
+      if (!currentEmail) return '';
+      const isOwner = p.owner && p.owner.email === currentEmail;
+      const isAdmin = currentRole === 'ROLE_ADMIN' || currentRole === 'ADMIN';
+      if (isOwner || isAdmin) {
+        return ` <button onclick="goEdit(${p.id})">Edit</button>
+                 <button onclick="doDelete(${p.id})">Delete</button>`;
+      }
+      return '';
+    }
+
+    function goEdit(id) {
+      window.location.href = `/webpages/properties/edit/${id}`;
+    }
+
+    async function doDelete(id) {
+      if (!confirm('Delete this property?')) return;
+      if (!currentEmail) return alert('Not authenticated');
+      try {
+        const res = await fetch(`/api/properties/delete/${id}?email=${encodeURIComponent(currentEmail)}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (res.ok) {
+          alert('Deleted');
+          loadApproved();
+        } else {
+          const text = await res.text();
+          alert('Delete failed: ' + text);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    document.getElementById('btnSearch').addEventListener('click', async () => {
+      const kw = document.getElementById('qKeyword').value;
+      const loc = document.getElementById('qLocation').value;
+      const min = document.getElementById('qMinPrice').value;
+      const max = document.getElementById('qMaxPrice').value;
+      const type = document.getElementById('qType').value;
+
+      const params = new URLSearchParams();
+      if (loc) params.append('location', loc);
+      if (type) params.append('type', type);
+      if (min) params.append('minPrice', min);
+      if (max) params.append('maxPrice', max);
+      if (kw) params.append('keyword', kw);
+
+      const url = '/api/properties/search?' + params.toString();
+      try {
+        const res = await fetch(url);
+        if (!res.ok) {
+          document.getElementById('list').innerText = 'Search failed';
+          return;
+        }
+        const props = await res.json();
+        render(props);
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    document.getElementById('btnClear').addEventListener('click', () => {
+      document.getElementById('qKeyword').value = '';
+      document.getElementById('qLocation').value = '';
+      document.getElementById('qMinPrice').value = '';
+      document.getElementById('qMaxPrice').value = '';
+      document.getElementById('qType').value = '';
+      loadApproved();
+    });
+
+    loadApproved();
+  </script>
+</body>
+</html>
+
+

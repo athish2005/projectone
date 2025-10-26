@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #e0f7fa;
+            margin: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #00796b;
+        }
+
+        h2 {
+            color: #004d40;
+            margin-top: 30px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .user-card, .property-card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .user-card button, .property-card button {
+            margin-right: 10px;
+            margin-top: 5px;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            color: #fff;
+        }
+
+        .user-card .edit-btn { background-color: #007bff; }
+        .user-card .delete-btn { background-color: crimson; }
+
+        .property-card img {
+            width: 100%;
+            max-height: 200px;
+            object-fit: cover;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .property-card button {
+            background-color: #00796b;
+        }
+
+        .property-card .delete-btn { background-color: crimson; }
+
+        .property-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        #message {
+            text-align: center;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        /* Back to Home button styling */
+        .back-home {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #1976d2;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .back-home:hover {
+            background-color: #1565c0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Admin Dashboard</h1>
+
+    <!-- ✅ Back to Home Button -->
+    <div style="text-align: center; margin-bottom: 20px;">
+        <a href="/webpages/" class="back-home">Back to Home</a>
+    </div>
+
+    <div id="message"></div>
+
+    <div class="section">
+        <h2>Users Details :</h2>
+        <div id="user-list">Loading users...</div>
+    </div>
+
+    <div class="section">
+        <h2>Pending Properties : </h2>
+        <div id="pending-properties" class="property-grid">Loading properties...</div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        if(!token) window.location.href = '/webpages/login';
+
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const role = payload.role || payload.roles || "";
+
+        if (!role.includes("ADMIN")) {
+            alert("Access denied! Admins only.");
+            window.location.href = '/webpages/login';
+        }
+
+        function showMessage(text, color = "green") {
+            const msg = document.getElementById("message");
+            msg.innerHTML = `<p style="color:${color};">${text}</p>`;
+            setTimeout(() => msg.innerHTML = "", 3000);
+        }
+
+        async function loadUsers() {
+            try {
+                const res = await fetch('/api/admin/users', {
+                    headers: {'Authorization': 'Bearer ' + token}
+                });
+                const users = await res.json();
+                const container = document.getElementById('user-list');
+
+                container.innerHTML = users.map(u => `
+                    <div class="user-card">
+                        <p><strong>${u.name}</strong> (${u.email})</p>
+                        <p>Role: ${u.role}</p>
+                        <button class="edit-btn" onclick="editUser(${u.id})">Edit</button>
+                        <button class="delete-btn" onclick="deleteUser(${u.id})">Delete</button>
+                    </div>
+                `).join('');
+            } catch (e) {
+                showMessage("Failed to load users", "red");
+            }
+        }
+
+        async function editUser(id) {
+            try {
+                const res = await fetch('/api/admin/users', {
+                    headers: {'Authorization': 'Bearer ' + token}
+                });
+                const users = await res.json();
+                const user = users.find(u => u.id === id);
+                if (!user) return showMessage("User not found", "red");
+
+                const newName = prompt("Enter new name:", user.name);
+                const newRole = prompt("Enter new role (ROLE_ADMIN / ROLE_CUSTOMER):", user.role);
+                if (!newName || !newRole) return;
+
+                const updatedUser = { ...user, name: newName, role: newRole };
+
+                const updateRes = await fetch(`/api/admin/update/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify(updatedUser)
+                });
+
+                if (updateRes.ok) {
+                    showMessage("User updated successfully");
+                    loadUsers();
+                } else {
+                    showMessage("Failed to update user", "red");
+                }
+            } catch (e) {
+                showMessage("Error updating user", "red");
+            }
+        }
+
+        async function deleteUser(id) {
+            if(!confirm("Delete this user?")) return;
+            try {
+                const res = await fetch(`/api/admin/delete/${id}`, {
+                    method: 'DELETE',
+                    headers: {'Authorization': 'Bearer ' + token}
+                });
+
+                if (res.ok) {
+                    showMessage("User deleted successfully");
+                    loadUsers();
+                } else {
+                    showMessage("Failed to delete user", "red");
+                }
+            } catch (e) {
+                showMessage("Error deleting user", "red");
+            }
+        }
+
+        async function loadPendingProperties() {
+            try {
+                const res = await fetch('/api/properties', {headers: {'Authorization': 'Bearer ' + token}});
+                const properties = await res.json();
+                const pending = properties.filter(p => !p.approved);
+                const container = document.getElementById('pending-properties');
+
+                container.innerHTML = pending.map(p => `
+                    <div class="property-card">
+                        <img src="${p.imageUrl || 'https://via.placeholder.com/300x200?text=No+Image'}" alt="${p.title}">
+                        <h3>${p.title}</h3>
+                        <p>${p.description}</p>
+                        <p><strong>Owner:</strong> ${p.owner.name} (${p.owner.email})</p>
+                        <button onclick="approveProperty(${p.id})">Approve</button>
+                        <button class="delete-btn" onclick="deleteProperty(${p.id}, '${p.owner.email}')">Delete</button>
+                    </div>
+                `).join('');
+            } catch (e) {
+                showMessage("Failed to load properties", "red");
+            }
+        }
+
+        async function approveProperty(id) {
+            try {
+                const res = await fetch(`/api/properties/approve/${id}`, {
+                    method: 'PUT',
+                    headers: {'Authorization': 'Bearer ' + token}
+                });
+                if (res.ok) {
+                    showMessage("Property approved");
+                    loadPendingProperties();
+                } else {
+                    showMessage("Failed to approve property", "red");
+                }
+            } catch (e) {
+                showMessage("Error approving property", "red");
+            }
+        }
+
+        async function deleteProperty(id, email) {
+            if(!confirm("Delete this property?")) return;
+            try {
+                const res = await fetch(`/api/properties/delete/${id}?email=${email}`, {
+                    method: 'DELETE',
+                    headers: {'Authorization': 'Bearer ' + token}
+                });
+                if (res.ok) {
+                    showMessage("Property deleted successfully");
+                    loadPendingProperties();
+                } else {
+                    showMessage("Failed to delete property", "red");
+                }
+            } catch (e) {
+                showMessage("Error deleting property", "red");
+            }
+        }
+
+        loadUsers();
+        loadPendingProperties();
+    </script>
+</body>
+</html>
